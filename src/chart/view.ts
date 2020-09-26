@@ -18,6 +18,7 @@ import {
   size,
   uniqueId,
   isEqual,
+  map,
 } from '@antv/util';
 import { Attribute, Coordinate, Event as GEvent, GroupComponent, ICanvas, IGroup, IShape, Scale } from '../dependents';
 import {
@@ -45,6 +46,7 @@ import { GROUP_Z_INDEX, LAYER, PLOT_EVENTS, VIEW_LIFE_CIRCLE } from '../constant
 import Base from '../base';
 import { Facet, getFacet } from '../facet';
 import Geometry from '../geometry/base';
+import Element from '../geometry/element';
 import { createInteraction, Interaction } from '../interaction';
 import { getTheme } from '../theme';
 import { BBox } from '../util/bbox';
@@ -682,7 +684,7 @@ export class View extends Base {
 
     // 需要把已存在的 view 销毁，否则会重复创建
     // 目前针对配置项还没有特别好的 view 更新机制，为了不影响主流流程，所以在这里直接销毁
-    this.views.forEach(view => view.destroy());
+    this.views.forEach((view) => view.destroy());
     this.views = [];
 
     this.initOptions();
@@ -1268,6 +1270,8 @@ export class View extends Base {
     this.renderBackgroundStyleShape();
     // 最终的绘制 render
     this.renderPaintRecursive(isUpdate);
+    // 绘制完所有组件和图形后，执行状态样式设置
+    this.renderStateStyleRecursice();
 
     this.emit(VIEW_LIFE_CIRCLE.AFTER_PAINT);
 
@@ -1328,7 +1332,7 @@ export class View extends Base {
     this.initComponents(isUpdate);
     // 4. 布局计算每隔 view 的 padding 值
     // 4.1. 自动加 auto padding -> absolute padding，并且增加 appendPadding
-    this.autoPadding  = calculatePadding(this).shrink(parsePadding(this.appendPadding));
+    this.autoPadding = calculatePadding(this).shrink(parsePadding(this.appendPadding));
     // 4.2. 计算出新的 coordinateBBox，更新 Coordinate
     // 这里必须保留，原因是后面子 view 的 viewBBox 或根据 parent 的 coordinateBBox
     this.coordinateBBox = this.viewBBox.shrink(this.autoPadding.getPadding());
@@ -1399,6 +1403,24 @@ export class View extends Base {
       const view = views[i];
       view.renderPaintRecursive(isUpdate);
     }
+  }
+
+  /**
+   * 绘制已有的状态样式
+   */
+  protected renderStateStyleRecursice() {
+    const elements = flatten(map(this.geometries, (geom: Geometry) => geom.elements));
+    each(elements, (ele: Element) => {
+      each(ele.getStates(), (state) => {
+        // force reopen state
+        ele.setState(state, true, true);
+      });
+    });
+
+    // 同样递归处理子 views
+    each(this.views, (view) => {
+      view.renderStateStyleRecursice();
+    });
   }
 
   // end Get 方法

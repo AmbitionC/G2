@@ -199,14 +199,15 @@ export default class Element extends Base {
    *
    * @param stateName 状态名
    * @param stateStatus 是否开启状态
+   * @param force 强制重新设置状态样式
    */
-  public setState(stateName: string, stateStatus: boolean) {
+  public setState(stateName: string, stateStatus: boolean, force?: boolean) {
     const { states, shapeFactory, model, shape, shapeType } = this;
 
     const index = states.indexOf(stateName);
     if (stateStatus) {
       // 开启状态
-      if (index > -1) {
+      if (index > -1 && !force) {
         // 该状态已经开启，则返回
         return;
       }
