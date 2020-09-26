@@ -1409,11 +1409,12 @@ export class View extends Base {
    * 绘制已有的状态样式
    */
   protected renderStateStyleRecursice() {
-    const elements = flatten(map(this.geometries, (geom: Geometry) => geom.elements));
-    each(elements, (ele: Element) => {
-      each(ele.getStates(), (state) => {
-        // force reopen state
-        ele.setState(state, true, true);
+    each(this.geometries, (geom: Geometry) => {
+      each(geom.elements, (ele: Element) => {
+        each(ele.getStates(), (state) => {
+          // force reopen state
+          ele.setState(state, true, true);
+        });
       });
     });
 
